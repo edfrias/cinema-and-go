@@ -4,7 +4,7 @@
 
 ![cinema and go](images/what.gif)
 
-```Cinema And Go``` is a platform where you can geolocate yourself and see which are the closest cinemas to you and which sessions you are able to rech and enjoy.
+```Cinema And Go``` is a platform where you can geolocate yourself and see which are the closest cinemas to you and which sessions you are able to reach and enjoy.
 
 ## Description
 
