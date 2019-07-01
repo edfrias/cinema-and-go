@@ -1,6 +1,4 @@
-# SkyLab Inn App
-
-## APP
+# Cinema And Go - App
 
 ## Available Scripts for development
 
