@@ -34,7 +34,7 @@
     "react-scripts": "3.0.0"
   },
   "devDependencies": {
-    "bcrypt": "^3.0.6",
+    "bcrypt": "^5.0.0",
     "cinema-and-go-data": "file:../cinema-and-go-data"
   },
   "jest": {
