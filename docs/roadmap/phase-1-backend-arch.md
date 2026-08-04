@@ -4,7 +4,7 @@
 
 Refactor the current backend into a more maintainable, testable, and decoupled architecture.
 
-## Current state
+## Current state at phase start
 
 - Express routes and business logic are tightly coupled to data access.
 - Validation and error handling are only partially encapsulated.
@@ -48,9 +48,9 @@ Refactor the current backend into a more maintainable, testable, and decoupled a
 - [x] reduce `logic` to a compatibility-only facade while preserving legacy contracts
 - [x] re-orient legacy integration tests toward `apiService` and isolate explicit `logic` compatibility checks
 - [x] retire `src/logic` fully by moving integration coverage to `src/composition/apiService.test.js`
-- [ ] complete dependency modernization across app/data packages
-- [ ] complete backend architectural split into `domain/infrastructure/presentation`
-- [ ] migrate remaining API tests still tied to legacy assumptions
+- [ ] complete dependency modernization across app/data packages (tracked outside API phase-1 closure)
+- [x] complete backend architectural split into `domain/infrastructure/presentation` for `cinema-and-go-api`
+- [x] migrate remaining API tests still tied to legacy assumptions
 
 ### Measured delta (API package)
 
@@ -68,10 +68,68 @@ Dependency-Track is accepted as a target platform for dependency governance, but
 
 ## Validation
 
-- [ ] layers are separated and navigable
-- [ ] logic is decoupled from Mongoose
-- [ ] critical-path unit and integration tests exist
+- [x] layers are separated and navigable in `cinema-and-go-api`
+- [x] logic is decoupled from Mongoose in runtime paths
+- [x] critical-path unit and integration tests exist
 - [ ] coverage criteria are agreed with `@qa-backend`
+
+## Phase closure note
+
+- closure target: Phase 1 API migration
+- closure date: 2026-08-04
+- status: technically closed, pending formal QA sign-off
+
+### Done criteria
+
+- [x] domain/infrastructure/presentation layers are active in `cinema-and-go-api`
+- [x] legacy `src/logic` module retired and behavior owned by `apiService`
+- [x] API test suite passes in full (`68/68`)
+- [x] API package vulnerability baseline reduced to zero in documented checks
+- [ ] coverage criteria signed off by `@qa-backend` (blocking for formal closure)
+
+### QA sign-off record (blocking)
+
+- sign-off status: pending
+- owner: `@qa-backend`
+- requested on: 2026-08-04
+- approved on: pending
+- evidence:
+	- API full suite: `npm test` -> `68/68` passing
+	- migration log: `docs/implementation/backend-refactor.md` (steps 1-18)
+	- architecture closure scope: this document (`phase-1-backend-arch.md`)
+
+> Update this block when QA approves and then mark `coverage criteria are agreed with @qa-backend` as completed.
+
+### QA approval checklist
+
+- [ ] confirm scope: closure applies to API phase 1 only
+- [ ] confirm architecture state: runtime paths use `domain/infrastructure/presentation` via `apiService`
+- [ ] confirm legacy removal: no runtime dependency on `src/logic`
+- [ ] confirm validation baseline: `npm test` passes (`68/68`)
+- [ ] confirm no regressions in HTTP/auth/error contracts from phase-1 tests
+
+### QA sign-off request template
+
+```text
+Subject: QA sign-off request - API phase 1 clean architecture closure
+
+Please review and approve the API phase-1 closure gate.
+
+Evidence:
+- Full API suite green: npm test -> 68/68 passing
+- Legacy logic retired and runtime delegated to apiService composition
+- Roadmap closure criteria documented in docs/roadmap/phase-1-backend-arch.md
+- Execution log documented in docs/implementation/backend-refactor.md (steps 1-18)
+
+Requested action:
+- Confirm coverage criteria agreement for @qa-backend
+- Mark sign-off status as approved with date in phase-1-backend-arch.md
+```
+
+### Out of scope for API phase-1 closure
+
+- dependency modernization across `cinema-and-go-app` and `cinema-and-go-data`
+- GraphQL and OpenAPI implementation work (phase 2)
 
 ## Related documents
 
