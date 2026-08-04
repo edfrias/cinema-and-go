@@ -8,6 +8,7 @@ function handleErrors(callback, res) {
 
                 if (error instanceof LogicError) status = 409
                 else if (error instanceof UnknownError) status = 400
+                else if (error instanceof UnauthorizedError) status = 401
 
                 res.status(status).json({ error: message || 'unknown error' })
             })

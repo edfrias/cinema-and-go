@@ -10,7 +10,7 @@ module.exports = (req, res, next) => {
             .then(() => {
                 const { headers: { authorization } } = req
 
-                if (!authorization) throw new UnauthorizedError()
+                if (!authorization) throw new UnauthorizedError('Unauthorized')
 
                 const token = authorization.slice(7)
 

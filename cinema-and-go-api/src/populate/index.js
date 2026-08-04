@@ -1,21 +1,12 @@
 const dotenv = require('dotenv')
 const { mongoose } = require('cinema-and-go-data/src/models')
-const logic = require('../logic')
+const { apiService } = require('../composition/apiService')
+const { runPopulate } = require('./runPopulate')
 
 dotenv.config()
 
 const { env: { MONGO_URL_LOCAL: url } } = process;
 
 (async () => {
-    try {
-        await mongoose.connect(url)
-
-        console.log('connected to database')
-
-        await logic.scrapCinemaMovies()
-
-        return mongoose.disconnect()
-    } catch (error) {
-        console.error(error, error.message)
-    }
+    await runPopulate({ mongoose, url, apiService, logger: console })
 })()

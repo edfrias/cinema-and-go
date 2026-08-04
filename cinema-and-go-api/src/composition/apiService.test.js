@@ -3,7 +3,7 @@ const { MongoMemoryServer } = require('mongodb-memory-server')
 const { mongoose, User, Movie, MovieSessions, Cinema, Distance } = require('cinema-and-go-data/src/models')
 const { Types: { ObjectId } } = mongoose
 const bcrypt = require('bcrypt')
-const logic = require('.')
+const { apiService } = require('./apiService')
 const scrapper = require('../lib/scrapper')
 const gMaps = require('../lib/maps')
 const { RequirementError, ValueError, FormatError, LogicError } = require('../common/errors')
@@ -15,7 +15,7 @@ const useRemoteTestDb = process.env.USE_REMOTE_TEST_DB === 'true'
 
 const TEST_TIMEOUT = 1000000
 
-describe('logic', () => {
+describe('apiService', () => {
     let mongoServer
 
     beforeEach(() => {
@@ -54,7 +54,7 @@ describe('logic', () => {
 
     describe('register user', () => {
         it('should succeed on correct data', async () => {
-            const res = await logic.registerUser(name, email, password)
+            const res = await apiService.registerUser(name, email, password)
             expect(res).toBeDefined()
 
             const users = await User.find()
@@ -70,82 +70,82 @@ describe('logic', () => {
             expect(await bcrypt.compare(password, user.password)).toBeTruthy()
         })
 
-        it('should fail on undefined username', () => {
+        it('should fail on undefined username', async () => {
             const name = undefined
 
-            expect(() => logic.registerUser(name, email, password)).toThrow(RequirementError)
+            await expect(apiService.registerUser(name, email, password)).rejects.toThrow(RequirementError)
         })
 
-        it('should fail on null username', () => {
+        it('should fail on null username', async () => {
             const name = null
 
-            expect(() => logic.registerUser(name, email, password)).toThrow(RequirementError)
+            await expect(apiService.registerUser(name, email, password)).rejects.toThrow(RequirementError)
         })
 
-        it('should fail on empty username', () => {
+        it('should fail on empty username', async () => {
             const name = ''
 
-            expect(() => logic.registerUser(name, email, password)).toThrow(ValueError)
+            await expect(apiService.registerUser(name, email, password)).rejects.toThrow(ValueError)
         })
 
-        it('should fail on blank username', () => {
+        it('should fail on blank username', async () => {
             const name = ' \t    \n'
 
-            expect(() => logic.registerUser(name, email, password)).toThrow(ValueError)
+            await expect(apiService.registerUser(name, email, password)).rejects.toThrow(ValueError)
         })
 
-        it('should fail on undefined email', () => {
+        it('should fail on undefined email', async () => {
             const email = undefined
 
-            expect(() => logic.registerUser(name, email, password)).toThrow(RequirementError)
+            await expect(apiService.registerUser(name, email, password)).rejects.toThrow(RequirementError)
         })
 
-        it('should fail on null email', () => {
+        it('should fail on null email', async () => {
             const email = null
 
-            expect(() => logic.registerUser(name, email, password)).toThrow(RequirementError)
+            await expect(apiService.registerUser(name, email, password)).rejects.toThrow(RequirementError)
         })
 
-        it('should fail on empty email', () => {
+        it('should fail on empty email', async () => {
             const email = ''
 
-            expect(() => logic.registerUser(name, email, password)).toThrow(ValueError)
+            await expect(apiService.registerUser(name, email, password)).rejects.toThrow(ValueError)
         })
 
-        it('should fail on blank email', () => {
+        it('should fail on blank email', async () => {
             const email = ' \t    \n'
 
-            expect(() => logic.registerUser(name, email, password)).toThrow(ValueError)
+            await expect(apiService.registerUser(name, email, password)).rejects.toThrow(ValueError)
         })
 
-        it('should fail on non-email email', () => {
+        it('should fail on non-email email', async () => {
             const nonEmail = 'non-email'
 
-            expect(() => logic.registerUser(name, nonEmail, password)).toThrow(FormatError)
+            await expect(apiService.registerUser(name, nonEmail, password)).rejects.toThrow(FormatError)
         })
 
-        it('should fail on undefined username', () => {
+        it('should fail on undefined username', async () => {
             const password = undefined
 
-            expect(() => logic.registerUser(name, email, password)).toThrow(RequirementError)
+            await expect(apiService.registerUser(name, email, password)).rejects.toThrow(RequirementError)
         })
 
-        it('should fail on null username', () => {
+        it('should fail on null username', async () => {
             const password = null
 
-            expect(() => logic.registerUser(name, email, password)).toThrow(RequirementError)
+            await expect(apiService.registerUser(name, email, password)).rejects.toThrow(RequirementError)
         })
 
-        it('should fail on empty username', () => {
+        it('should fail on empty username', async () => {
             const password = ''
 
-            expect(() => logic.registerUser(name, email, password)).toThrow(ValueError)
+            await expect(apiService.registerUser(name, email, password)).rejects.toThrow(ValueError)
         })
 
-        it('should fail on blank username', () => {
+        it('should fail on blank username', async () => {
             const password = ' \t    \n'
 
-            expect(() => logic.registerUser(name, email, password)).toThrow(ValueError)
+            await expect(apiService.registerUser(name, email, password)).rejects.toThrow(ValueError)
         })
     })
 
@@ -155,7 +155,7 @@ describe('logic', () => {
         beforeEach(async () => user = await User.create({ name, email, password: await bcrypt.hash(password, 10) }))
 
         it('should succeed on correct credentials', async () => {
-            const id = await logic.authenticateUser(email, password)
+            const id = await apiService.authenticateUser(email, password)
 
             expect(id).toBeDefined()
             expect(typeof id).toBe('string')
@@ -170,7 +170,7 @@ describe('logic', () => {
         beforeEach(async () => user = await User.create({ name, email, password: await bcrypt.hash(password, 10) }))
 
         it('should succeed on correct id from existing user', async () => {
-            const _user = await logic.retrieveUser(user.id)
+            const _user = await apiService.retrieveUser(user.id)
 
             expect(_user.id).toBeUndefined()
             expect(_user.name).toEqual(name)
@@ -192,9 +192,9 @@ describe('logic', () => {
         })
 
         it('should succeed on update user', async () => {
-            await logic.updateUser(id, userUpdated)
+            await apiService.updateUser(id, userUpdated)
 
-            const userChange = await logic.retrieveUser(id)
+            const userChange = await apiService.retrieveUser(id)
 
             expect(userChange.name).toEqual(_name)
             expect(userChange.email).toEqual(_email)
@@ -205,7 +205,7 @@ describe('logic', () => {
             const id = 'aslkfjhsdlkafhjldksjhf'
 
             try {
-                await logic.updateUser(id, userUpdated)
+                await apiService.updateUser(id, userUpdated)
                 throw Error('should not reach this point')
             } catch (error) {
                 expect(error).toBeInstanceOf(LogicError)
@@ -213,36 +213,36 @@ describe('logic', () => {
             }
         })
 
-        it('should fail on undefined id', () => {
-            expect(() => logic.updateUser(undefined, userUpdated)).toThrow(RequirementError)
+        it('should fail on undefined id', async () => {
+            await expect(apiService.updateUser(undefined, userUpdated)).rejects.toThrow(RequirementError)
         })
 
-        it('should fail on null id', () => {
-            expect(() => logic.updateUser(null, userUpdated)).toThrow(RequirementError)
+        it('should fail on null id', async () => {
+            await expect(apiService.updateUser(null, userUpdated)).rejects.toThrow(RequirementError)
         })
 
-        it('should fail on empty id', () => {
-            expect(() => logic.updateUser('', userUpdated)).toThrow(ValueError)
+        it('should fail on empty id', async () => {
+            await expect(apiService.updateUser('', userUpdated)).rejects.toThrow(ValueError)
         })
 
-        it('should fail on blank id', () => {
-            expect(() => logic.updateUser(' \t    \n', userUpdated)).toThrow(ValueError)
+        it('should fail on blank id', async () => {
+            await expect(apiService.updateUser(' \t    \n', userUpdated)).rejects.toThrow(ValueError)
         })
 
-        it('should fail on a not string id', () => {
-            expect(() => logic.updateUser(123, userUpdated)).toThrow(TypeError)
+        it('should fail on a not string id', async () => {
+            await expect(apiService.updateUser(123, userUpdated)).rejects.toThrow(TypeError)
         })
 
-        it('should fail on undefined user data', () => {
-            expect(() => logic.updateUser(id, undefined)).toThrow(RequirementError)
+        it('should fail on undefined user data', async () => {
+            await expect(apiService.updateUser(id, undefined)).rejects.toThrow(RequirementError)
         })
 
-        it('should fail on null user data', () => {
-            expect(() => logic.updateUser(id, null)).toThrow(RequirementError)
+        it('should fail on null user data', async () => {
+            await expect(apiService.updateUser(id, null)).rejects.toThrow(RequirementError)
         })
 
-        it('should fail on a not object data', () => {
-            expect(() => logic.updateUser(id, 'data')).toThrow(TypeError)
+        it('should fail on a not object data', async () => {
+            await expect(apiService.updateUser(id, 'data')).rejects.toThrow(TypeError)
         })
     })
 
@@ -255,16 +255,16 @@ describe('logic', () => {
         })
 
         it('should succeed on remove a user', async () => {
-            await logic.removeUser(id, password)
+            await apiService.removeUser(id, password)
 
-            await expect(logic.retrieveUser(id)).rejects.toThrow(LogicError)
+            await expect(apiService.retrieveUser(id)).rejects.toThrow(LogicError)
         })
 
         it('should fail on delete user with incorrect user id', async () => {
             const id_ = 'aslkfjhsd3141234dksjhf'
 
             try {
-                await logic.removeUser(id_, password)
+                await apiService.removeUser(id_, password)
                 throw Error('should not reach this point')
             } catch (error) {
                 expect(error.message).toContain('Cast to ObjectId failed for value')
@@ -272,20 +272,20 @@ describe('logic', () => {
             }
         })
 
-        it('should fail on undefined id', () => {
-            expect(() => logic.removeUser(undefined, password)).toThrow(RequirementError)
+        it('should fail on undefined id', async () => {
+            await expect(apiService.removeUser(undefined, password)).rejects.toThrow(RequirementError)
         })
 
-        it('should fail on null id', () => {
-            expect(() => logic.removeUser(null, password)).toThrow(RequirementError)
+        it('should fail on null id', async () => {
+            await expect(apiService.removeUser(null, password)).rejects.toThrow(RequirementError)
         })
 
-        it('should fail on empty id', () => {
-            expect(() => logic.removeUser('', password)).toThrow(ValueError)
+        it('should fail on empty id', async () => {
+            await expect(apiService.removeUser('', password)).rejects.toThrow(ValueError)
         })
 
-        it('should fail on blank id', () => {
-            expect(() => logic.removeUser(' \t    \n', password)).toThrow(ValueError)
+        it('should fail on blank id', async () => {
+            await expect(apiService.removeUser(' \t    \n', password)).rejects.toThrow(ValueError)
         })
     })
 
@@ -295,7 +295,7 @@ describe('logic', () => {
             const link = 'https://www.ecartelera.com/cines/0,9,23.html'
             const cinemas = []
 
-            const inserted = await logic.registerCities(name, link, cinemas)
+            const inserted = await apiService.registerCities(name, link, cinemas)
 
             expect(inserted).toBeDefined()
         })
@@ -308,7 +308,7 @@ describe('logic', () => {
             const info = [ '90 min.', 'EE.UU.', 'Ciencia ficción', '+16' ]
             const cast = 'Elizabeth Banks, Jackson A. Dunn, David Denman Dir. David Yarovesky'
 
-            const inserted = await logic.registerMovie(title, img, info, cast)
+            const inserted = await apiService.registerMovie(title, img, info, cast)
 
             expect(inserted).toBeDefined()
         })
@@ -322,12 +322,12 @@ describe('logic', () => {
             const title = 'El Hijo'
             const info = [ '90 min.', 'EE.UU.', 'Ciencia ficción', '+16' ]
             const cast = 'Elizabeth Banks, Jackson A. Dunn, David Denman Dir. David Yarovesky'
-            inserted = await logic.registerMovie(title, img, info, cast)
+            inserted = await apiService.registerMovie(title, img, info, cast)
         })
 
         it('should insert all movie sessions from a given cinema', async () => {
             const movieSession = ['12:00', '16:30', '19:15', '22:00', '12:00', '20:00', '12:30', '17:15', '20:00', '18:00', '20:45' ]
-            const sessions = await logic.registerSessions(inserted, movieSession)
+            const sessions = await apiService.registerSessions(inserted, movieSession)
             expect(sessions).toBeDefined()
         })
     })
@@ -345,14 +345,14 @@ describe('logic', () => {
                 }
             ])
 
-            const cityCinemas = await logic.scrapCinemaMovies()
+            const cityCinemas = await apiService.scrapCinemaMovies()
             expect(cityCinemas).toBeUndefined()
         })
     })
 
     describe('retrieve all cinemas', () => {
         it('should retrieve a list of cinemas from db', async () => {
-            const cinemas = await logic.retrieveAllCinemas()
+            const cinemas = await apiService.retrieveAllCinemas()
 
             expect(cinemas).toBeDefined()
         })
@@ -364,10 +364,10 @@ describe('logic', () => {
             const cinemaId = new ObjectId()
             const userId = new ObjectId()
 
-            const cinemaInfo = await logic.registerCinemaLocation(cinemaId, userId, cinema[0], cinema[1])
-            expect(cinemaInfo).toBeUndefined()
+            const cinemaInfo = await apiService.registerCinemaLocation(cinemaId, userId, cinema[0], cinema[1])
+            expect(cinemaInfo).toBeDefined()
 
-            const retrieved = await logic.retrieveCinemaLocation(cinemaId.toString(), userId.toString())
+            const retrieved = await apiService.retrieveCinemaLocation(cinemaId.toString(), userId.toString())
             expect(retrieved).toBeDefined()
             expect(retrieved.distance).toBe(cinema[0])
             expect(retrieved.duration).toBe(cinema[1])
@@ -391,7 +391,7 @@ describe('logic', () => {
                 ]
             })
 
-            const insertData = await logic.setCinemaLocation(origin, destination, MAPS_KEY)
+            const insertData = await apiService.setCinemaLocation(origin, destination, MAPS_KEY)
 
             expect(insertData).toBeDefined()
             expect(insertData.distance).toBe(1700)
@@ -402,9 +402,9 @@ describe('logic', () => {
             const cinemaId = new ObjectId()
             const userId = new ObjectId()
 
-            await logic.registerCinemaLocation(cinemaId, userId, 1000, 800)
+            await apiService.registerCinemaLocation(cinemaId, userId, 1000, 800)
 
-            const cinemaData = await logic.retrieveCinemaLocation(cinemaId.toString(), userId.toString())
+            const cinemaData = await apiService.retrieveCinemaLocation(cinemaId.toString(), userId.toString())
             expect(cinemaData).toBeDefined()
             expect(cinemaData.distance).toBe(1000)
             expect(cinemaData.duration).toBe(800)

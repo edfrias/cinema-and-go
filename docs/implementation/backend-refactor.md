@@ -258,3 +258,205 @@ Validation performed:
 Outcome:
 
 - third migration vertical is active, and movie/cinema import responsibilities are now routed through domain + infrastructure layers while legacy API contracts remain intact.
+
+### 11) Presentation layer rollout (controllers + routes v1)
+
+Objective:
+
+- move HTTP handling from legacy route file to presentation controllers and versioned routes.
+
+Actions applied:
+
+- introduced presentation middleware wrappers:
+	- `src/presentation/middleware/auth.js`
+	- `src/presentation/middleware/handleErrors.js`
+- introduced presentation controllers:
+	- `src/presentation/controllers/UserController.js`
+	- `src/presentation/controllers/CinemaController.js`
+- introduced versioned presentation routes:
+	- `src/presentation/routes/v1/userRoutes.js`
+	- `src/presentation/routes/v1/cinemaRoutes.js`
+	- `src/presentation/routes/v1/index.js`
+- switched `src/routes/index.js` to a compatibility façade that delegates to `presentation/routes/v1`.
+- migrated all existing API endpoints from legacy route definitions to presentation routes while preserving the same paths and response contracts.
+
+Validation performed:
+
+- `npm test` => 52/52 passing
+
+Outcome:
+
+- presentation layer is now active as the route/controller entrypoint, and legacy `src/routes/index.js` no longer owns endpoint definitions.
+
+### 12) Presentation HTTP coverage and middleware hardening
+
+Objective:
+
+- add route-level validation for the new presentation layer and harden middleware behavior exposed by those tests.
+
+Actions applied:
+
+- extracted reusable Express app composition into `src/app.js` so HTTP routes can be tested without booting the real server entrypoint.
+- updated `index.js` to use the shared app factory as bootstrap-only composition.
+- added HTTP tests for presentation routes in `src/presentation/routes/v1/index.test.js` covering:
+	- user registration
+	- authentication token issuance
+	- protected-route rejection without auth header
+	- cinema listing through presentation controller
+	- domain-error mapping through `handleErrors`
+	- 404 fallback behavior
+- updated MSW global test setup to allow localhost/127.0.0.1 requests so in-process HTTP route tests can coexist with adapter-level network interception.
+- fixed async `UnauthorizedError` handling in `src/middlewares/handleErrors.js` so auth failures return `401` instead of `400`.
+- made missing-auth responses explicit in `src/middlewares/auth.js` with `Unauthorized` message.
+
+Validation performed:
+
+- `npm test -- src/presentation/routes/v1/index.test.js` => 6/6 passing
+- `npm test` => 58/58 passing
+
+Outcome:
+
+- presentation layer now has direct HTTP contract coverage, and authorization failures are mapped correctly at middleware level.
+
+### 13) Composition root extraction and direct presentation unit coverage
+
+Objective:
+
+- remove dependency wiring from `logic` and add direct unit coverage for controllers/middleware.
+
+Actions applied:
+
+- extracted dependency composition to `src/composition/apiService.js`.
+- converted `src/logic/index.js` into a compatibility façade that:
+	- preserves legacy sync validation behavior
+	- delegates actual application behavior to the composed `apiService`
+	- preserves legacy return contracts where tests depend on them
+- kept `src/populate/index.js` and presentation controllers compatible through the unchanged `logic` surface.
+- added direct unit tests for presentation components:
+	- `src/presentation/controllers/UserController.test.js`
+	- `src/presentation/controllers/CinemaController.test.js`
+	- `src/presentation/middleware/handleErrors.test.js`
+
+Validation performed:
+
+- `npm test -- src/presentation/controllers/UserController.test.js src/presentation/controllers/CinemaController.test.js src/presentation/middleware/handleErrors.test.js` => 6/6 passing
+- `npm test` => 64/64 passing
+
+Outcome:
+
+- wiring is now explicit in a composition root instead of being embedded in `logic`, and presentation has both HTTP-level and unit-level coverage.
+
+### 14) Presentation runtime decoupling from legacy logic
+
+Objective:
+
+- make presentation consume the composed application service directly instead of the legacy `logic` facade.
+
+Actions applied:
+
+- updated `src/presentation/controllers/UserController.js` to use `apiService` from `src/composition/apiService.js` directly.
+- updated `src/presentation/controllers/CinemaController.js` to use `apiService` directly.
+- preserved `src/logic/index.js` as compatibility surface for legacy callers such as logic tests and populate scripts.
+- updated controller and route tests to spy on `apiService` instead of `logic`, so tests now validate the real presentation dependency boundary.
+- added direct unit coverage for `src/presentation/middleware/auth.js`.
+
+Validation performed:
+
+- `npm test -- src/presentation/controllers/UserController.test.js src/presentation/controllers/CinemaController.test.js src/presentation/routes/v1/index.test.js src/presentation/middleware/auth.test.js` => 12/12 passing
+- `npm test` => 66/66 passing
+
+Outcome:
+
+- presentation is now decoupled from the legacy logic facade at runtime, while compatibility for non-presentation callers is preserved.
+
+### 15) Populate flow decoupling and unit coverage
+
+Objective:
+
+- remove remaining non-HTTP dependency on legacy `logic` by migrating populate execution to the composed application service.
+
+Actions applied:
+
+- refactored `src/populate/index.js` to use `apiService` from `src/composition/apiService.js`.
+- extracted populate execution orchestration into `src/populate/runPopulate.js`.
+- added unit coverage for populate execution lifecycle in `src/populate/runPopulate.test.js`.
+- validated successful path (connect -> populate -> disconnect) and failure path (error log -> rethrow -> disconnect).
+
+Validation performed:
+
+- `npm test -- src/populate/runPopulate.test.js src/presentation/middleware/auth.test.js src/presentation/routes/v1/index.test.js` => 10/10 passing
+- `npm test` => 68/68 passing
+
+Outcome:
+
+- populate no longer depends on `logic`, reducing the legacy facade footprint and increasing test coverage on operational scripts.
+
+### 16) Legacy logic footprint reduction
+
+Objective:
+
+- minimize `src/logic/index.js` to compatibility-only responsibilities.
+
+Actions applied:
+
+- reduced `logic` to a thin compatibility façade that delegates to `apiService`.
+- kept only the synchronous validation guards needed by legacy tests/callers.
+- preserved compatibility behavior required by existing contracts:
+	- `deleteUser` alias
+	- legacy typo method `retireveNearestCinemas`
+	- `registerCinemaLocation` resolving to `undefined`
+- added explicit in-file note clarifying `logic` as compatibility boundary and `apiService` as behavior owner.
+
+Validation performed:
+
+- `npm test` => 68/68 passing
+
+Outcome:
+
+- legacy logic remains stable for existing consumers while responsibility is now clearly centralized in `apiService`.
+
+### 17) Legacy test suite re-orientation to apiService
+
+Objective:
+
+- reduce coupling of integration behavior tests to `logic` and keep `logic` tests focused on compatibility guarantees.
+
+Actions applied:
+
+- updated `src/logic/index.test.js` so primary behavior assertions execute through `apiService`.
+- kept `logic` assertions for compatibility-only concerns:
+	- sync validation guard expectations
+	- `deleteUser` alias compatibility
+	- legacy typo method `retireveNearestCinemas`
+	- `registerCinemaLocation` returning `undefined`
+- kept integration setup unchanged (MongoMemoryServer / optional remote DB) to avoid destabilizing CI/local determinism.
+
+Validation performed:
+
+- `npm test -- src/logic/index.test.js` => 42/42 passing
+- `npm test` => 70/70 passing
+
+Outcome:
+
+- core behavior validation is now centered on the composed application service, while legacy facade checks are explicit and isolated.
+
+### 18) Full retirement of legacy logic module
+
+Objective:
+
+- complete the exit plan by removing `src/logic` after behavior coverage was migrated to `apiService`.
+
+Actions applied:
+
+- created `src/composition/apiService.test.js` as the integration behavior suite owner.
+- removed `src/logic/index.test.js` after dropping legacy-only compatibility assertions.
+- removed `src/logic/index.js` compatibility facade.
+- validated there are no remaining internal references to `logic` in `cinema-and-go-api/src`.
+
+Validation performed:
+
+- `npm test` => 68/68 passing
+
+Outcome:
+
+- the API runtime no longer depends on a legacy logic layer, and integration behavior coverage is now fully owned by `apiService` composition.

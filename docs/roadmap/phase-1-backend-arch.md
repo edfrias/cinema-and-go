@@ -40,6 +40,14 @@ Refactor the current backend into a more maintainable, testable, and decoupled a
 - [x] fix legacy delete-user route inconsistency (`deleteUser/removeUser` + invalid `handleErrors(... )()` call)
 - [x] migrate cinema read vertical (`retrieveAllCinemas`, `retrieveCinema`, `retrieveAllCinemaSessions`, `retireveNearestCinemas`) to domain use cases + query repository
 - [x] migrate cinema import vertical (`registerMovie`, `registerSessions`, `registerCinema`, `scrapCinemaMovies`) to domain use cases + adapter/repository layer
+- [x] roll out presentation layer with controllers + v1 routes and move endpoint definitions out of legacy `src/routes/index.js`
+- [x] add HTTP route coverage for presentation layer and fix middleware auth/error mapping defects found by those tests
+- [x] extract API composition root from `logic` and add direct unit coverage for presentation controllers/middleware
+- [x] make presentation controllers consume `apiService` directly and add unit coverage for auth middleware
+- [x] migrate populate script to `apiService` with dedicated unit tests for execution lifecycle
+- [x] reduce `logic` to a compatibility-only facade while preserving legacy contracts
+- [x] re-orient legacy integration tests toward `apiService` and isolate explicit `logic` compatibility checks
+- [x] retire `src/logic` fully by moving integration coverage to `src/composition/apiService.test.js`
 - [ ] complete dependency modernization across app/data packages
 - [ ] complete backend architectural split into `domain/infrastructure/presentation`
 - [ ] migrate remaining API tests still tied to legacy assumptions

@@ -1,9 +1,7 @@
 require('dotenv').config()
 
-const express = require('express')
 const package = require('./package.json')
-const routes = require('./src/routes')
-const cors = require('cors')
+const { createApp } = require('./src/app')
 const { mongoose } = require('cinema-and-go-data')
 
 // PRE
@@ -16,15 +14,7 @@ const { env: { PORT, MONGO_URL: url }, argv: [, , port = PORT || 8080], } = proc
 
         console.log(`connected to ${url} database`)
 
-        const app = express()
-
-        app.use(cors())
-
-        app.use('/api', routes)
-
-        app.use(function (req, res, next) {
-            res.status(404).json({ error: 'Not found.' })
-        })
+        const app = createApp()
 
         app.listen(port, () => console.log(`${package.name} ${package.version} up on port ${port}`))
     } catch (error) {
