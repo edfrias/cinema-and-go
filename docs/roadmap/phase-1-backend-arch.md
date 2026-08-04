@@ -71,13 +71,13 @@ Dependency-Track is accepted as a target platform for dependency governance, but
 - [x] layers are separated and navigable in `cinema-and-go-api`
 - [x] logic is decoupled from Mongoose in runtime paths
 - [x] critical-path unit and integration tests exist
-- [ ] coverage criteria are agreed with `@qa-backend`
+- [x] coverage criteria are agreed with `@qa-backend`
 
 ## Phase closure note
 
 - closure target: Phase 1 API migration
 - closure date: 2026-08-04
-- status: technically closed, pending formal QA sign-off
+- status: formally closed
 
 ### Done criteria
 
@@ -85,14 +85,14 @@ Dependency-Track is accepted as a target platform for dependency governance, but
 - [x] legacy `src/logic` module retired and behavior owned by `apiService`
 - [x] API test suite passes in full (`68/68`)
 - [x] API package vulnerability baseline reduced to zero in documented checks
-- [ ] coverage criteria signed off by `@qa-backend` (blocking for formal closure)
+- [x] coverage criteria signed off by `@qa-backend` (blocking for formal closure)
 
 ### QA sign-off record (blocking)
 
-- sign-off status: pending
+- sign-off status: approved
 - owner: `@qa-backend`
 - requested on: 2026-08-04
-- approved on: pending
+- approved on: 2026-08-04
 - evidence:
 	- API full suite: `npm test` -> `68/68` passing
 	- migration log: `docs/implementation/backend-refactor.md` (steps 1-18)
@@ -102,11 +102,11 @@ Dependency-Track is accepted as a target platform for dependency governance, but
 
 ### QA approval checklist
 
-- [ ] confirm scope: closure applies to API phase 1 only
-- [ ] confirm architecture state: runtime paths use `domain/infrastructure/presentation` via `apiService`
-- [ ] confirm legacy removal: no runtime dependency on `src/logic`
-- [ ] confirm validation baseline: `npm test` passes (`68/68`)
-- [ ] confirm no regressions in HTTP/auth/error contracts from phase-1 tests
+- [x] confirm scope: closure applies to API phase 1 only
+- [x] confirm architecture state: runtime paths use `domain/infrastructure/presentation` via `apiService`
+- [x] confirm legacy removal: no runtime dependency on `src/logic`
+- [x] confirm validation baseline: `npm test` passes (`68/68`)
+- [x] confirm no regressions in HTTP/auth/error contracts from phase-1 tests
 
 ### QA sign-off request template
 
