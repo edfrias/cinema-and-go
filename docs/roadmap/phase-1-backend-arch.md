@@ -28,6 +28,30 @@ Refactor the current backend into a more maintainable, testable, and decoupled a
 - [ ] review JWT authentication and harden flows
 - [ ] prepare gradual TypeScript adoption
 
+## Implementation status (2026-08-04)
+
+- [x] start dependency modernization in `cinema-and-go-api`
+- [x] raise minimum runtime to Node 20+ and npm 10+
+- [x] migrate network-coupled tests (`maps`, `scrapper`) from real HTTP calls to MSW mocks
+- [x] migrate API test runner from Jest to Vitest
+- [x] make API logic integration tests deterministic with in-memory MongoDB
+- [x] add baseline dependency governance scripts (`audit`, `audit:fail`, `sbom`)
+- [ ] complete dependency modernization across app/data packages
+- [ ] complete backend architectural split into `domain/infrastructure/presentation`
+- [ ] migrate remaining API tests still tied to legacy assumptions
+
+### Measured delta (API package)
+
+- `npm audit` before upgrade: 99 vulnerabilities
+- `npm audit` after first upgrade slice: 9 vulnerabilities
+- remaining intentional technical constraints:
+	- `msw@1.x` kept for CommonJS + Jest compatibility in this phase
+	- `@cyclonedx/cyclonedx-npm` pending major update because current major line requires additional migration not yet in scope
+
+### Decision note: Dependency-Track
+
+Dependency-Track is accepted as a target platform for dependency governance, but full operational adoption is deferred to the DevOps phase when CI/CD pipelines are available. In phase 1 we use a lighter strategy: `npm audit` + SBOM generation + periodic triage.
+
 ## Validation
 
 - [ ] layers are separated and navigable

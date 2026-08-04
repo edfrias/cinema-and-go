@@ -51,7 +51,7 @@ const logic = {
         ])
 
         return (async () => {
-            const user = await User.findById(ObjectId(id)).select('-__v  -password').lean()
+            const user = await User.findById(new ObjectId(id)).select('-__v  -password').lean()
             if (!user) throw new LogicError(`user with id "${id}" does not exists`)
 
             return user
@@ -137,7 +137,7 @@ const logic = {
                         billboard.map(async ({title, img, info, cast, movieSessions}) => {
                             const movie = await this.registerMovie(title, img, info, cast)
                             debugger
-                            return await this.registerSessions(ObjectId(movie), movieSessions)
+                            return await this.registerSessions(new ObjectId(movie), movieSessions)
                         })
                     )
                     //debugger
@@ -221,7 +221,7 @@ const logic = {
 
     retrieveCinemaLocation(cinemaId, userId) {
         return(async () => {
-            const cinemaData = await Distance.findOne({$and: [{user: ObjectId(userId)}, {cinema: ObjectId(cinemaId)}]})
+            const cinemaData = await Distance.findOne({$and: [{user: new ObjectId(userId)}, {cinema: new ObjectId(cinemaId)}]})
 
             return cinemaData
         })()

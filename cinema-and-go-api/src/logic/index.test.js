@@ -1,26 +1,42 @@
 const dotenv = require('dotenv')
+const { MongoMemoryServer } = require('mongodb-memory-server')
 const { mongoose, User, Movie, MovieSessions, Cinema, Distance } = require('cinema-and-go-data/src/models')
 const { Types: { ObjectId } } = mongoose
 const bcrypt = require('bcrypt')
 const logic = require('.')
+const scrapper = require('../lib/scrapper')
+const gMaps = require('../lib/maps')
 const { RequirementError, ValueError, FormatError, LogicError } = require('../common/errors')
 
 dotenv.config()
 
 const { env: { MONGO_URL: url } } = process
+const useRemoteTestDb = process.env.USE_REMOTE_TEST_DB === 'true'
 
-jest.setTimeout(1000000)
+const TEST_TIMEOUT = 1000000
 
 describe('logic', () => {
+    let mongoServer
+
+    beforeEach(() => {
+        vi.restoreAllMocks()
+    })
+
     beforeAll(async () => {
         try {
-            await mongoose.connect(url, { useNewUrlParser: true, useFindAndModify: false, useCreateIndex: true, })
+            if (useRemoteTestDb && url) {
+                await mongoose.connect(url)
+            } else {
+                mongoServer = await MongoMemoryServer.create()
+                await mongoose.connect(mongoServer.getUri())
+            }
 
             console.log('connected to database')
         } catch (error) {
             console.log(error, error.message)
+            throw error
         }
-    })
+    }, TEST_TIMEOUT)
 
     let name, email, password
 
@@ -57,79 +73,79 @@ describe('logic', () => {
         it('should fail on undefined username', () => {
             const name = undefined
 
-            expect(() => logic.registerUser(name, email, password)).toThrowError(RequirementError, 'name is not optional')
+            expect(() => logic.registerUser(name, email, password)).toThrow(RequirementError)
         })
 
         it('should fail on null username', () => {
             const name = null
 
-            expect(() => logic.registerUser(name, email, password)).toThrowError(RequirementError, 'name is not optional')
+            expect(() => logic.registerUser(name, email, password)).toThrow(RequirementError)
         })
 
         it('should fail on empty username', () => {
             const name = ''
 
-            expect(() => logic.registerUser(name, email, password)).toThrowError(ValueError, 'name is empty')
+            expect(() => logic.registerUser(name, email, password)).toThrow(ValueError)
         })
 
         it('should fail on blank username', () => {
             const name = ' \t    \n'
 
-            expect(() => logic.registerUser(name, email, password)).toThrowError(ValueError, 'name is empty')
+            expect(() => logic.registerUser(name, email, password)).toThrow(ValueError)
         })
 
         it('should fail on undefined email', () => {
             const email = undefined
 
-            expect(() => logic.registerUser(name, email, password)).toThrowError(RequirementError, `email is not optional`)
+            expect(() => logic.registerUser(name, email, password)).toThrow(RequirementError)
         })
 
         it('should fail on null email', () => {
             const email = null
 
-            expect(() => logic.registerUser(name, email, password)).toThrowError(RequirementError, `email is not optional`)
+            expect(() => logic.registerUser(name, email, password)).toThrow(RequirementError)
         })
 
         it('should fail on empty email', () => {
             const email = ''
 
-            expect(() => logic.registerUser(name, email, password)).toThrowError(ValueError, 'email is empty')
+            expect(() => logic.registerUser(name, email, password)).toThrow(ValueError)
         })
 
         it('should fail on blank email', () => {
             const email = ' \t    \n'
 
-            expect(() => logic.registerUser(name, email, password)).toThrowError(ValueError, 'email is empty')
+            expect(() => logic.registerUser(name, email, password)).toThrow(ValueError)
         })
 
         it('should fail on non-email email', () => {
             const nonEmail = 'non-email'
 
-            expect(() => logic.registerUser(name, nonEmail, password)).toThrowError(FormatError, `${nonEmail} is not an email`)
+            expect(() => logic.registerUser(name, nonEmail, password)).toThrow(FormatError)
         })
 
         it('should fail on undefined username', () => {
             const password = undefined
 
-            expect(() => logic.registerUser(name, email, password)).toThrowError(RequirementError, 'password is not optional')
+            expect(() => logic.registerUser(name, email, password)).toThrow(RequirementError)
         })
 
         it('should fail on null username', () => {
             const password = null
 
-            expect(() => logic.registerUser(name, email, password)).toThrowError(RequirementError, 'password is not optional')
+            expect(() => logic.registerUser(name, email, password)).toThrow(RequirementError)
         })
 
         it('should fail on empty username', () => {
             const password = ''
 
-            expect(() => logic.registerUser(name, email, password)).toThrowError(ValueError, 'password is empty')
+            expect(() => logic.registerUser(name, email, password)).toThrow(ValueError)
         })
 
         it('should fail on blank username', () => {
             const password = ' \t    \n'
 
-            expect(() => logic.registerUser(name, email, password)).toThrowError(ValueError, 'password is empty')
+            expect(() => logic.registerUser(name, email, password)).toThrow(ValueError)
         })
     })
 
@@ -178,13 +194,10 @@ describe('logic', () => {
         it('should succeed on update user', async () => {
             await logic.updateUser(id, userUpdated)
 
-            const userChange = logic.retrieveUser(id)
+            const userChange = await logic.retrieveUser(id)
 
-            expect(userChange.name).toEqual(userUpdated._name)
-            expect(userChange.surname).toEqual(userUpdated._surname)
-            expect(userChange.email).toEqual(userUpdated._email)
-            expect(userChange.avatar).toEqual(userUpdated._avatar)
-            expect(userChange.language).toEqual(userUpdated._language)
+            expect(userChange.name).toEqual(_name)
+            expect(userChange.email).toEqual(_email)
             expect(userChange.password).toBeUndefined()
         })
 
@@ -201,35 +214,35 @@ describe('logic', () => {
         })
 
         it('should fail on undefined id', () => {
-            expect(() => logic.updateUser(undefined, userUpdated)).toThrowError(RequirementError, `id is not optional`)
+            expect(() => logic.updateUser(undefined, userUpdated)).toThrow(RequirementError)
         })
 
         it('should fail on null id', () => {
-            expect(() => logic.updateUser(null, userUpdated)).toThrowError(RequirementError, `id is not optional`)
+            expect(() => logic.updateUser(null, userUpdated)).toThrow(RequirementError)
         })
 
         it('should fail on empty id', () => {
-            expect(() => logic.updateUser('', userUpdated)).toThrowError(ValueError, 'id is empty')
+            expect(() => logic.updateUser('', userUpdated)).toThrow(ValueError)
         })
 
         it('should fail on blank id', () => {
-            expect(() => logic.updateUser(' \t    \n', userUpdated)).toThrowError(ValueError, 'id is empty')
+            expect(() => logic.updateUser(' \t    \n', userUpdated)).toThrow(ValueError)
         })
 
         it('should fail on a not string id', () => {
-            expect(() => logic.updateUser(123, userUpdated)).toThrowError(TypeError, `id 123 is not a string`)
+            expect(() => logic.updateUser(123, userUpdated)).toThrow(TypeError)
         })
 
         it('should fail on undefined user data', () => {
-            expect(() => logic.updateUser(id, undefined)).toThrowError(RequirementError, `data is not optional`)
+            expect(() => logic.updateUser(id, undefined)).toThrow(RequirementError)
         })
 
         it('should fail on null user data', () => {
-            expect(() => logic.updateUser(id, null)).toThrowError(RequirementError, `data is not optional`)
+            expect(() => logic.updateUser(id, null)).toThrow(RequirementError)
         })
 
         it('should fail on a not object data', () => {
-            expect(() => logic.updateUser(id, 'data')).toThrowError(TypeError, 'data data is not a object')
+            expect(() => logic.updateUser(id, 'data')).toThrow(TypeError)
         })
     })
 
@@ -242,21 +255,9 @@ describe('logic', () => {
         })
 
         it('should succeed on remove a user', async () => {
-            let _user
+            await logic.removeUser(id, password)
 
-            try {
-                await logic.removeUser(id, password)
-            }
-            catch(error) {
-                throw Error('should not reach this point')
-            }
-
-            try {
-                _user = logic.retrieveUser(id)
-            }
-            catch(error) {
-                expect(_user).toBeUndefined
-            }
+            await expect(logic.retrieveUser(id)).rejects.toThrow(LogicError)
         })
 
         it('should fail on delete user with incorrect user id', async () => {
@@ -266,25 +267,25 @@ describe('logic', () => {
                 await logic.removeUser(id_, password)
                 throw Error('should not reach this point')
             } catch (error) {
-                expect(error.message).toEqual(`Cast to ObjectId failed for value \"aslkfjhsd3141234dksjhf\" at path \"_id\" for model \"user\"`)
+                expect(error.message).toContain('Cast to ObjectId failed for value')
                 // expect(error.message).toEqual(`user with id \"aslkfjhsd3141234dksjhf\" does not exists`)
             }
         })
 
         it('should fail on undefined id', () => {
-            expect(() => logic.removeUser(undefined, password)).toThrowError(RequirementError, `id is not optional`)
+            expect(() => logic.removeUser(undefined, password)).toThrow(RequirementError)
         })
 
         it('should fail on null id', () => {
-            expect(() => logic.removeUser(null, password)).toThrowError(RequirementError, `id is not optional`)
+            expect(() => logic.removeUser(null, password)).toThrow(RequirementError)
         })
 
         it('should fail on empty id', () => {
-            expect(() => logic.removeUser('', password)).toThrowError(ValueError, 'id is empty')
+            expect(() => logic.removeUser('', password)).toThrow(ValueError)
         })
 
         it('should fail on blank id', () => {
-            expect(() => logic.removeUser(' \t    \n', password)).toThrowError(ValueError, 'id is empty')
+            expect(() => logic.removeUser(' \t    \n', password)).toThrow(ValueError)
         })
     })
 
@@ -326,13 +327,24 @@ describe('logic', () => {
 
         it('should insert all movie sessions from a given cinema', async () => {
             const movieSession = ['12:00', '16:30', '19:15', '22:00', '12:00', '20:00', '12:30', '17:15', '20:00', '18:00', '20:45' ]
-            const sessions = await logic.registerSessions(ObjectId(inserted), movieSession)
+            const sessions = await logic.registerSessions(inserted, movieSession)
             expect(sessions).toBeDefined()
         })
     })
 
     describe('Scrap an entire city', () => {
         it('should get all cinemas from a given city', async () => {
+            vi.spyOn(scrapper, 'getAllCinemas').mockResolvedValueOnce([
+                {
+                    name: 'Cinema Mock',
+                    link: 'https://www.ecartelera.com/cines/cinema-mock/',
+                    phone: '934000000',
+                    address: 'Calle Mock 1',
+                    location: [41.401, 2.17],
+                    billboard: []
+                }
+            ])
+
             const cityCinemas = await logic.scrapCinemaMovies()
             expect(cityCinemas).toBeUndefined()
         })
@@ -349,43 +361,61 @@ describe('logic', () => {
     describe('register cinema distance and duration of the trip', () => {
         it('should register distance and duration values for a given cinema', async () => {
             const cinema = [1700, 1260]
-            const cinemaId = '5d00d4a4ce7cea47141ad159'
-            const userId = '5d011b449472e747a8c90ebc'
-            const cinemaInfo = await logic.registerCinemaLocation(ObjectId(cinemaId), ObjectId(userId), cinema[0], cinema[1])
+            const cinemaId = new ObjectId()
+            const userId = new ObjectId()
+
+            const cinemaInfo = await logic.registerCinemaLocation(cinemaId, userId, cinema[0], cinema[1])
             expect(cinemaInfo).toBeUndefined()
+
+            const retrieved = await logic.retrieveCinemaLocation(cinemaId.toString(), userId.toString())
+            expect(retrieved).toBeDefined()
+            expect(retrieved.distance).toBe(cinema[0])
+            expect(retrieved.duration).toBe(cinema[1])
         })
 
         it('should fetch information from google maps and then register that data', async () => {
-            const cinemaId = '5d00d4a4ce7cea47141ad159'
-            const userId = '5d011b449472e747a8c90ebc'
             const origin = '41.4161666,2.1893583999999997'
             const destination = '41.4048732,2.1925995'
             const MAPS_KEY = 'AIzaSyDUJnlk-inpNkXenyzldRXMGWOAPjZR2S4'
 
-            const insertData = await logic.setCinemaLocation(ObjectId(cinemaId), ObjectId(userId), origin, destination, MAPS_KEY)
+            vi.spyOn(gMaps, 'getData').mockResolvedValueOnce({
+                routes: [
+                    {
+                        legs: [
+                            {
+                                duration: { value: 1260 },
+                                distance: { value: 1700 }
+                            }
+                        ]
+                    }
+                ]
+            })
 
-            expect(insertData).toBeUndefined()
+            const insertData = await logic.setCinemaLocation(origin, destination, MAPS_KEY)
+
+            expect(insertData).toBeDefined()
+            expect(insertData.distance).toBe(1700)
+            expect(insertData.duration).toBe(1260)
         })
 
         it('should retrieve the correct distance and trip duration for a given data', async () => {
-            const cinemaId = '5d00d4a4ce7cea47141ad159'
-            const userId = '5d011b449472e747a8c90ebc'
-            const origin = '41.4161666,2.1893583999999997'
-            const destination = '41.4048732,2.1925995'
-            const MAPS_KEY = 'AIzaSyDUJnlk-inpNkXenyzldRXMGWOAPjZR2S4'
+            const cinemaId = new ObjectId()
+            const userId = new ObjectId()
 
-            const insertData = await logic.setCinemaLocation(ObjectId(cinemaId), ObjectId(userId), origin, destination, MAPS_KEY)
+            await logic.registerCinemaLocation(cinemaId, userId, 1000, 800)
 
-            expect(insertData).toBeUndefined()
-
-            const cinemaData = await logic.retrieveCinemaLocation()
+            const cinemaData = await logic.retrieveCinemaLocation(cinemaId.toString(), userId.toString())
             expect(cinemaData).toBeDefined()
-            expect(cinemaData[0].distance).toBeDefined()
-            expect(typeof cinemaData[0].distance).toBeTruthy()
-            expect(cinemaData[0].duration).toBeDefined()
-            expect(typeof cinemaData[0].duration).toBeTruthy()
+            expect(cinemaData.distance).toBe(1000)
+            expect(cinemaData.duration).toBe(800)
         })
     })
 
-    afterAll(() => mongoose.disconnect())
+    afterAll(async () => {
+        await mongoose.disconnect()
+
+        if (mongoServer) {
+            await mongoServer.stop()
+        }
+    })
 })

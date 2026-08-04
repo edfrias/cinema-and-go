@@ -1,5 +1,4 @@
 const express = require('express')
-const bodyParser = require('body-parser')
 const jwt = require('jsonwebtoken')
 const logic = require('../logic')
 const handleErrors = require('../middlewares/handleErrors')
@@ -7,7 +6,7 @@ const auth = require('../middlewares/auth')
 
 const { env: { JWT_SECRET } } = process
 
-const jsonParser = bodyParser.json()
+const jsonParser = express.json()
 
 const router = express.Router()
 
