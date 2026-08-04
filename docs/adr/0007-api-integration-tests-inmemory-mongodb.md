@@ -6,7 +6,7 @@ Accepted.
 
 ## Context
 
-The API logic integration suite depended on an external legacy MongoDB host from environment configuration.
+The API integration test suite used an external legacy MongoDB host specified via environment configuration.
 That dependency introduced instability (DNS/network failures) and prevented deterministic test execution in local environments and CI.
 
 At the same time, phase goals require preserving integration coverage of repositories/models while removing non-essential external dependencies.

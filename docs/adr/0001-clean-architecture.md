@@ -6,7 +6,7 @@ Proposed.
 
 ## Context
 
-The current backend tightly couples routes, logic, and persistence. That makes testing, contract evolution, and local refactors harder.
+The current backend lacks separation between routes, business rules, and persistence. That makes testing, contract evolution, and local refactors harder.
 
 ## Decision
 
