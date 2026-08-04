@@ -36,6 +36,10 @@ Refactor the current backend into a more maintainable, testable, and decoupled a
 - [x] migrate API test runner from Jest to Vitest
 - [x] make API logic integration tests deterministic with in-memory MongoDB
 - [x] add baseline dependency governance scripts (`audit`, `audit:fail`, `sbom`)
+- [x] start clean architecture implementation in API with first user vertical (domain/interface/use-cases + mongoose repository wiring)
+- [x] fix legacy delete-user route inconsistency (`deleteUser/removeUser` + invalid `handleErrors(... )()` call)
+- [x] migrate cinema read vertical (`retrieveAllCinemas`, `retrieveCinema`, `retrieveAllCinemaSessions`, `retireveNearestCinemas`) to domain use cases + query repository
+- [x] migrate cinema import vertical (`registerMovie`, `registerSessions`, `registerCinema`, `scrapCinemaMovies`) to domain use cases + adapter/repository layer
 - [ ] complete dependency modernization across app/data packages
 - [ ] complete backend architectural split into `domain/infrastructure/presentation`
 - [ ] migrate remaining API tests still tied to legacy assumptions

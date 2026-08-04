@@ -53,13 +53,13 @@ router.put('/users/update', jsonParser, auth, (req, res) => {
 })
 
 router.delete('/users/delete', jsonParser, auth, (req, res) => {
-    const { userId, body: { email, password } } = req
+    const { userId } = req
 
     handleErrors(async () => {
-        await logic.deleteUser(userId, email, password)
+        await logic.deleteUser(userId)
 
         return res.json({ message: 'Ok, user deleted.' })
-    }, res)()
+    }, res)
 })
 
 router.get('/user/distance/cinema', auth, (req, res) => {

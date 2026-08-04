@@ -4,9 +4,28 @@ const validate = require('../common/validate')
 const models = require('cinema-and-go-data/src/models')
 const scrapper = require('../lib/scrapper')
 const gMaps = require('../lib/maps')
+const { createUserUseCases } = require('../domain/usecases/user')
+const { createCinemaReadUseCases } = require('../domain/usecases/cinema')
+const { createCinemaImportUseCases } = require('../domain/usecases/cinema-import')
+const { UserRepository } = require('../infrastructure/repositories/mongoose/UserRepository')
+const { CinemaQueryRepository } = require('../infrastructure/repositories/mongoose/CinemaQueryRepository')
+const { MovieRepository } = require('../infrastructure/repositories/mongoose/MovieRepository')
+const { MovieSessionsRepository } = require('../infrastructure/repositories/mongoose/MovieSessionsRepository')
+const { CinemaWriteRepository } = require('../infrastructure/repositories/mongoose/CinemaWriteRepository')
+const { ScrapperAdapter } = require('../infrastructure/adapters/ScrapperAdapter')
 
 const { mongoose, User, Movie, MovieSessions, City, Cinema, Point, Distance } = models
 const {Types: {ObjectId}} = mongoose
+const userUseCases = createUserUseCases({ userRepository: new UserRepository(User), bcrypt })
+const cinemaReadUseCases = createCinemaReadUseCases({
+    cinemaQueryRepository: new CinemaQueryRepository({ CinemaModel: Cinema, MovieSessionsModel: MovieSessions })
+})
+const cinemaImportUseCases = createCinemaImportUseCases({
+    movieRepository: new MovieRepository(Movie),
+    movieSessionsRepository: new MovieSessionsRepository(MovieSessions),
+    cinemaWriteRepository: new CinemaWriteRepository({ CinemaModel: Cinema, PointModel: Point }),
+    scrapperAdapter: new ScrapperAdapter(scrapper)
+})
 
 const logic = {
     registerUser(name, email, password) {
@@ -15,17 +34,9 @@ const logic = {
             { name: 'email', value: email, type: 'string', notEmpty: true },
             { name: 'password', value: password, type: 'string', notEmpty: true }
         ])
-
         validate.email(email)
 
-        return (async () => {
-            const user = await User.findOne({'email': email})
-            if (user) throw new LogicError(`user with email "${email}" already exists`)
-
-            let hash = await bcrypt.hash(password, 10)
-
-            return await User.create({ name, email, password: hash })
-        })()
+        return userUseCases.registerUser(name, email, password)
     },
 
     authenticateUser(email, password) {
@@ -33,16 +44,9 @@ const logic = {
             { name: 'email', value: email, type: 'string', notEmpty: true },
             { name: 'password', value: password, type: 'string', notEmpty: true }
         ])
-
         validate.email(email)
 
-        return (async () => {
-            const user = await User.findOne({'email': email})
-            if (!user) throw new LogicError(`user with email "${email}" does not exists`)
-
-            if (await bcrypt.compare(password, user.password)) return user.id
-            else throw new LogicError('wrong credentials')
-        })()
+        return userUseCases.authenticateUser(email, password)
     },
 
     retrieveUser(id) {
@@ -50,12 +54,7 @@ const logic = {
             { name: 'id', value: id, type: 'string', notEmpty: true }
         ])
 
-        return (async () => {
-            const user = await User.findById(new ObjectId(id)).select('-__v  -password').lean()
-            if (!user) throw new LogicError(`user with id "${id}" does not exists`)
-
-            return user
-        })()
+        return userUseCases.retrieveUser(id)
     },
 
     updateUser(id, data) {
@@ -64,19 +63,7 @@ const logic = {
             { name: 'data', value: data, type: 'object', notEmpty: true }
         ])
 
-        return (async () => {
-            try {
-                let result = await User.findByIdAndUpdate(id, { $set: data }).select('-__v  -password').lean()
-
-                result.id = result._id.toString()
-                delete result._id
-
-                return result
-
-            } catch(error) {
-                throw new LogicError(`user with id "${id}" does not exists`)
-            }
-        })()
+        return userUseCases.updateUser(id, data)
     },
 
     removeUser(id) {
@@ -84,12 +71,12 @@ const logic = {
             { name: 'id', value: id, type: 'string', notEmpty: true }
         ])
 
-        return (async () => {
-            const user = await User.findById(id)
-            if(!user) throw new LogicError(`user with id "${id}" does not exists`)
+        return userUseCases.removeUser(id)
+    },
 
-            return await User.findByIdAndDelete(id)
-        })()
+    // Temporary compatibility alias while routes are migrated.
+    deleteUser(id) {
+        return userUseCases.removeUser(id)
     },
 
     registerCities(name, link, cinemas) {
@@ -99,100 +86,35 @@ const logic = {
     },
 
     registerMovie(title, img, info, cast) {
-        return (async () => {
-            const exists = await Movie.findOne({ title })
-            if (exists) return exists._id
-
-            const insertMovie = await Movie.create({ title, img, info, cast })
-
-            return insertMovie._id
-        })()
+        return cinemaImportUseCases.registerMovie(title, img, info, cast)
     },
 
     registerSessions(movie, sessions) {
-        return(async () => {
-            return await MovieSessions.create({ movie, sessions })
-        })()
+        return cinemaImportUseCases.registerSessions(movie, sessions)
     },
 
     registerCinema(name, link, phone, address, location, movieSessions, city) {
-        return (async () => {
-            const exists = await Cinema.findOne({ name })
-            if (exists) return exists._id
-
-            const insertCinema = await Cinema.create({ name, link, phone, address, location: new Point({ coordinates: location }), movieSessions, city })
-
-            return insertCinema._id
-        })()
+        return cinemaImportUseCases.registerCinema(name, link, phone, address, location, movieSessions, city)
     },
 
     scrapCinemaMovies() {
-        const bcnCinemas = 'https://www.ecartelera.com/cines/0,9,23.html'
-        return (async () => {
-            const scrapCinemas = await scrapper.getAllCinemas(bcnCinemas)
-            //debugger
-            await Promise.all(
-                scrapCinemas.map(async ({ name, link, phone, address, location, billboard }) => {
-                    const cinemaSessions = await Promise.all(
-                        billboard.map(async ({title, img, info, cast, movieSessions}) => {
-                            const movie = await this.registerMovie(title, img, info, cast)
-                            debugger
-                            return await this.registerSessions(new ObjectId(movie), movieSessions)
-                        })
-                    )
-                    //debugger
-                    await this.registerCinema(name, link, phone, address, location, cinemaSessions)
-                })
-            )
-        })()
+        return cinemaImportUseCases.scrapCinemaMovies()
     },
 
     retrieveAllCinemas() {
-        return (async() => {
-            return await Cinema.find()
-            .select('-__v').lean()
-            .populate({
-                path: 'movieSessions',
-                model: 'movieSessions',
-                select: '-__v',
-                options: { lean: true },
-                populate: {
-                    path: 'movie',
-                    model: 'movie',
-                    select: '-__v',
-                    options: { lean: true }
-                },
-            })
-        })()
+        return cinemaReadUseCases.retrieveAllCinemas()
     },
 
     retrieveCinema(id) {
-        return (async() => {
-            const cinema = await Cinema.find({ _id: id }).select('-__v').lean()
-
-            return cinema[0]
-        })()
+        return cinemaReadUseCases.retrieveCinema(id)
     },
 
     retrieveAllCinemaSessions(id) {
-        return (async() => {
-            return await MovieSessions.find({ _id: id })
-            .select('-__v')
-            .populate({
-                path: 'movie',
-                model: 'movie',
-                select: '-__v',
-                options: { lean: true }
-            })
-        })()
+        return cinemaReadUseCases.retrieveAllCinemaSessions(id)
     },
 
     retireveNearestCinemas(lng, lat, dist) {
-        return (async () => {
-            const cinemaLocations = await Cinema.find({ "location": {$near: { $geometry: { type: "Point", coordinates: [lng, lat] }, $maxDistance: dist }}}, 'location.coordinates').lean()
-
-            return cinemaLocations
-        })()
+        return cinemaReadUseCases.retrieveNearestCinemas(lng, lat, dist)
     },
 
     registerCinemaLocation(cinema, user, distance, duration) {

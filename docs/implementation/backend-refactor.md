@@ -163,3 +163,98 @@ Validation performed:
 Outcome:
 
 - API package reached zero known vulnerabilities while preserving Vitest-based testing infrastructure and deterministic integration execution.
+
+### 8) Clean architecture migration kickoff (user slice)
+
+Objective:
+
+- start the architectural split without breaking the current HTTP contract.
+
+Actions applied:
+
+- introduced initial layered structure for user flow:
+	- `src/domain/interfaces/IUserRepository.js`
+	- `src/infrastructure/repositories/mongoose/UserRepository.js`
+	- `src/domain/usecases/user/*`
+- wired legacy `src/logic/index.js` user methods to new use cases while preserving current external API.
+- restored legacy synchronous validation behavior at `logic` boundary to keep compatibility with existing tests.
+- fixed route inconsistency in `src/routes/index.js` for user deletion:
+	- removed invalid `handleErrors(... )()` invocation
+	- normalized call path to `logic.deleteUser(userId)`
+- added temporary compatibility alias `deleteUser -> removeUser` in logic while migration is in progress.
+
+Validation performed:
+
+- `npm test -- src/logic/index.test.js` => 40/40 passing
+- `npm test` => 52/52 passing
+
+Outcome:
+
+- migration is now active in code (not only planned), with a first domain/infrastructure slice in production code and no regression in the API test suite.
+
+### 9) Clean architecture migration - cinema read slice
+
+Objective:
+
+- continue migration with read-only cinema flows while keeping route contracts stable.
+
+Actions applied:
+
+- introduced cinema query repository contract and mongoose implementation:
+	- `src/domain/interfaces/ICinemaQueryRepository.js`
+	- `src/infrastructure/repositories/mongoose/CinemaQueryRepository.js`
+- introduced cinema read use cases:
+	- `RetrieveAllCinemasUseCase`
+	- `RetrieveCinemaUseCase`
+	- `RetrieveAllCinemaSessionsUseCase`
+	- `RetrieveNearestCinemasUseCase`
+- wired legacy logic methods to these use cases in `src/logic/index.js`:
+	- `retrieveAllCinemas`
+	- `retrieveCinema`
+	- `retrieveAllCinemaSessions`
+	- `retireveNearestCinemas`
+
+Validation performed:
+
+- `npm test` => 52/52 passing
+
+Outcome:
+
+- second migration vertical is now running through layered architecture with no functional regression in existing API tests.
+
+### 10) Clean architecture migration - cinema import slice
+
+Objective:
+
+- migrate scraping and import write-flow to layered use cases without changing current route behavior.
+
+Actions applied:
+
+- introduced new domain contracts for import flow:
+	- `IScrapperAdapter`
+	- `IMovieRepository`
+	- `IMovieSessionsRepository`
+	- `ICinemaWriteRepository`
+- introduced infrastructure implementations:
+	- `infrastructure/adapters/ScrapperAdapter.js`
+	- `infrastructure/repositories/mongoose/MovieRepository.js`
+	- `infrastructure/repositories/mongoose/MovieSessionsRepository.js`
+	- `infrastructure/repositories/mongoose/CinemaWriteRepository.js`
+- introduced import use cases:
+	- `RegisterMovieUseCase`
+	- `RegisterSessionsUseCase`
+	- `RegisterCinemaUseCase`
+	- `ScrapCinemaMoviesUseCase`
+- wired legacy logic methods to import use cases:
+	- `registerMovie`
+	- `registerSessions`
+	- `registerCinema`
+	- `scrapCinemaMovies`
+
+Validation performed:
+
+- `npm test` => 52/52 passing
+
+Outcome:
+
+- third migration vertical is active, and movie/cinema import responsibilities are now routed through domain + infrastructure layers while legacy API contracts remain intact.
