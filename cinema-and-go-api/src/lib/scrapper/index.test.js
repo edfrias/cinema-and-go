@@ -1,4 +1,4 @@
-const { rest } = require('msw')
+const { http, HttpResponse } = require('msw')
 const { server } = require('../../test/msw/server')
 const { FormatError, ValueError } = require('../../common/errors')
 const scrapper = require('.');
@@ -37,7 +37,7 @@ describe('scrapper', () => {
             const url = 'https://www.google.com/'
 
             server.use(
-                rest.get('https://www.google.com/', (_req, res, ctx) => res(ctx.body('<html>ok</html>')))
+                http.get('https://www.google.com/', () => HttpResponse.text('<html>ok</html>'))
             )
 
             const html = await scrapper.__getHtml(url)
@@ -63,7 +63,7 @@ describe('scrapper', () => {
 
         beforeAll(async () => {
             server.use(
-                rest.get(url_cinemas, (_req, res, ctx) => res(ctx.body(cityHtml)))
+                http.get(url_cinemas, () => HttpResponse.text(cityHtml))
             )
 
             html = await scrapper.__getHtml(url_cinemas)
@@ -91,7 +91,7 @@ describe('scrapper', () => {
 
         beforeAll(async () => {
             server.use(
-                rest.get(url_cinema, (_req, res, ctx) => res(ctx.body(cinemaHtml)))
+                http.get(url_cinema, () => HttpResponse.text(cinemaHtml))
             )
 
             html = await scrapper.__getHtml(url_cinema)
@@ -124,9 +124,9 @@ describe('scrapper', () => {
         const url_city = 'https://www.ecartelera.com/cines/0,9,23.html'
         it('should get all cinemas by calling it', async () => {
             server.use(
-                rest.get(url_city, (_req, res, ctx) => res(ctx.body(cityHtml))),
-                rest.get('https://www.ecartelera.com/cines/a/', (_req, res, ctx) => res(ctx.body(cinemaHtml))),
-                rest.get('https://www.ecartelera.com/cines/b/', (_req, res, ctx) => res(ctx.body(cinemaHtml)))
+                http.get(url_city, () => HttpResponse.text(cityHtml)),
+                http.get('https://www.ecartelera.com/cines/a/', () => HttpResponse.text(cinemaHtml)),
+                http.get('https://www.ecartelera.com/cines/b/', () => HttpResponse.text(cinemaHtml))
             )
 
             const cinemas = await scrapper.getAllCinemas(url_city)
@@ -140,7 +140,7 @@ describe('scrapper', () => {
         const url_cinema = 'https://www.ecartelera.com/cines/multicines-arenas-de-barcelona/'
         it('should retrieve all cinema information when call it', async () => {
             server.use(
-                rest.get(url_cinema, (_req, res, ctx) => res(ctx.body(cinemaHtml)))
+                http.get(url_cinema, () => HttpResponse.text(cinemaHtml))
             )
 
             const cinemaInfo = await scrapper.getCinemaInfo(url_cinema)

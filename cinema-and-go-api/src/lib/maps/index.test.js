@@ -1,4 +1,4 @@
-const { rest } = require('msw')
+const { http, HttpResponse } = require('msw')
 const { server } = require('../../test/msw/server')
 const { FormatError, ValueError } = require('../../common/errors')
 const gMaps = require('.');
@@ -9,8 +9,8 @@ describe('maps', () => {
             const url = 'https://maps.googleapis.com/maps/api/directions/json?origin=41.353172,2.1028038&destination=41.4418285,2.1993901&key=AIzaSyDUJnlk-inpNkXenyzldRXMGWOAPjZR2S4&mode=walking'
 
             server.use(
-                rest.get('https://maps.googleapis.com/maps/api/directions/json', (_req, res, ctx) => {
-                    return res(ctx.json({
+                http.get('https://maps.googleapis.com/maps/api/directions/json', () => {
+                    return HttpResponse.json({
                         routes: [
                             {
                                 legs: [
@@ -21,7 +21,7 @@ describe('maps', () => {
                                 ]
                             }
                         ]
-                    }))
+                    })
                 })
             )
 

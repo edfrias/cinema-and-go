@@ -44,9 +44,11 @@ Refactor the current backend into a more maintainable, testable, and decoupled a
 
 - `npm audit` before upgrade: 99 vulnerabilities
 - `npm audit` after first upgrade slice: 9 vulnerabilities
-- remaining intentional technical constraints:
-	- `msw@1.x` kept for CommonJS + Jest compatibility in this phase
-	- `@cyclonedx/cyclonedx-npm` pending major update because current major line requires additional migration not yet in scope
+- `npm audit` after remediation sprint (current state): 0 vulnerabilities (including `--omit=dev`)
+- major dependency remediations completed in API package:
+	- `@cyclonedx/cyclonedx-npm` upgraded to `6.x` (fixes high severity advisory)
+	- `msw` upgraded to `2.x` and tests adapted to new handler API
+	- API lockfile regenerated from clean install to remove stale vulnerable transitive graph from linked data package
 
 ### Decision note: Dependency-Track
 

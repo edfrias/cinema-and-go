@@ -55,7 +55,7 @@ Applied in `cinema-and-go-api`:
 Operational constraints introduced intentionally:
 
 - `engines.node >=20` and `engines.npm >=10` added to package manifest
-- MSW pinned to major 1 in this phase due CommonJS + Jest compatibility
+- initial MSW v1 compatibility constraint was removed in the remediation sprint; current state uses MSW v2 with `http/HttpResponse` handlers
 
 ### 2) Test stability refactor with MSW
 
@@ -140,3 +140,26 @@ Resolution applied:
 Result:
 
 - logic integration suite now runs offline and passes consistently under Vitest
+
+### 7) Vulnerability remediation sprint (aggressive scope)
+
+Objective:
+
+- reduce vulnerability backlog to minimum possible, allowing major upgrades when required.
+
+Actions applied:
+
+- regenerated API lockfile from clean install to remove stale transitive records coming from linked local packages.
+- upgraded `@cyclonedx/cyclonedx-npm` from `4.x` to `6.x` to remediate high-severity advisory (`GHSA-v75r-vx73-82pj`).
+- upgraded `msw` from `1.x` to `2.x` and migrated tests from `rest/ctx` handlers to `http/HttpResponse` API.
+
+Validation performed:
+
+- `npm audit --omit=dev --json` => 0 vulnerabilities
+- `npm audit --json` => 0 vulnerabilities
+- `npm test` => 52/52 passing
+- `npm run sbom` => successful generation after dependency alignment
+
+Outcome:
+
+- API package reached zero known vulnerabilities while preserving Vitest-based testing infrastructure and deterministic integration execution.
