@@ -8,7 +8,7 @@ const { env: { MONGO_URL_LOCAL: url } } = process;
 
 (async () => {
     try {
-        await mongoose.connect(url, { useNewUrlParser: true, useFindAndModify: false, useCreateIndex: true, })
+        await mongoose.connect(url)
 
         console.log('connected to database')
 

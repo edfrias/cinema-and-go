@@ -1,5 +1,5 @@
-import mongoose from 'mongoose'
-import schemas from './schemas'
+const mongoose = require('mongoose')
+const schemas = require('./schemas')
 
 const {
   city,
@@ -11,7 +11,7 @@ const {
   user,
 } = schemas
 
-export default {
+module.exports = {
   mongoose,
   City: mongoose.model('city', city),
   Cinema: mongoose.model('cinema', cinema),

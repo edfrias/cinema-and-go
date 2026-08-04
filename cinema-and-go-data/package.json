@@ -4,12 +4,15 @@
   "description": "",
   "main": "./src/models/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node --test \"src/models/**/*.test.js\""
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
+  "devDependencies": {
+    "mongodb-memory-server": "^11.2.0"
+  },
   "dependencies": {
-    "mongoose": "^5.5.11"
+    "mongoose": "^8.24.2"
   }
 }

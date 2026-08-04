@@ -12,7 +12,7 @@ const { env: { PORT, MONGO_URL: url }, argv: [, , port = PORT || 8080], } = proc
 
 (async () => {
     try {
-        await mongoose.connect(url, { useNewUrlParser: true, useFindAndModify: false, useCreateIndex: true })
+        await mongoose.connect(url)
 
         console.log(`connected to ${url} database`)
 
@@ -39,4 +39,3 @@ process.on('SIGINT', async () => {
     console.log('Session terminated.')
     process.exit(0)
 })
-

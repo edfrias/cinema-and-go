@@ -1,11 +1,11 @@
-import { Schema, ObjectId } from 'mongoose'
-import point from './point'
+const { Schema, ObjectId } = require('mongoose')
+const point = require('./point')
 
 const cinema = new Schema({
-  name: { type: String, required: true },
-  link: { type: String, required: true },
-  phone: { type: String, required: true },
-  address: { type: String, required: true },
+  name: { type: String, required: true, trim: true },
+  link: { type: String, required: true, trim: true },
+  phone: { type: String, required: true, trim: true },
+  address: { type: String, required: true, trim: true },
   location: {
     type: point,
     required: true
@@ -15,9 +15,11 @@ const cinema = new Schema({
     ref: 'movieSessions',
     required: true
   }],
-  city: { type: ObjectId, ref: 'City' },
+  city: { type: ObjectId, ref: 'city' },
 })
 
 cinema.index({ location: '2dsphere' })
+cinema.index({ name: 1 })
+cinema.index({ phone: 1 })
 
-export default cinema
+module.exports = cinema

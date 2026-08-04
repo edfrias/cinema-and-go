@@ -1,9 +1,11 @@
-import { Schema, ObjectId } from 'mongoose'
+const { Schema, ObjectId } = require('mongoose')
 
 const city = new Schema({
-    name: { type: String, required: true },
-    link: { type: String, required: true },
+    name: { type: String, required: true, trim: true },
+    link: { type: String, required: true, trim: true },
     cinemas: [{ type: ObjectId, ref: 'cinema'}]
 })
 
-export default city
+city.index({ name: 1 })
+
+module.exports = city

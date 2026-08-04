@@ -1,10 +1,12 @@
-import { Schema, ObjectId } from 'mongoose'
+const { Schema, ObjectId } = require('mongoose')
 
 const distance = new Schema({
-    distance: Number,
-    duration: Number,
-    cinema: { type: ObjectId, ref: 'Cinema' },
-    user : { type: ObjectId, ref: 'User' }
+    distance: { type: Number, required: true, min: 0 },
+    duration: { type: Number, required: true, min: 0 },
+    cinema: { type: ObjectId, ref: 'cinema', required: true },
+    user : { type: ObjectId, ref: 'user', required: true }
 })
 
-export default distance
+distance.index({ user: 1, cinema: 1 }, { unique: true })
+
+module.exports = distance

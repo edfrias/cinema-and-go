@@ -9,8 +9,16 @@ const point = new Schema({
     },
     coordinates: {
       type: [Number],
-      required: true
+      required: true,
+      validate: {
+        validator: (values) => Array.isArray(values)
+          && values.length === 2
+          && values.every((value) => typeof value === 'number' && Number.isFinite(value)),
+        message: 'coordinates must contain exactly two numeric values',
+      }
     }
+}, {
+  _id: false,
 })
 
-export default point
+module.exports = point

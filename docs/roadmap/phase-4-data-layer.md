@@ -6,9 +6,9 @@ Upgrade the data layer and prepare validation and indexing that match the system
 
 ## Current state
 
-- `mongoose` 5.5.11.
-- The models differ from what the target plan describes.
-- Indexing is partial and validation is mostly handled in the application layer.
+- `cinema-and-go-data` upgraded to `mongoose` 8.24.2.
+- Core data models were normalized and aligned with the target schema plan.
+- Index declarations and validation constraints are now covered by automated tests.
 
 ## Target state
 
@@ -19,20 +19,22 @@ Upgrade the data layer and prepare validation and indexing that match the system
 
 ## Backlog
 
-- [ ] review Mongoose 5 to 8 breaking changes
-- [ ] define target schemas before migrating code
+- [x] review Mongoose 5 to 8 breaking changes
+- [x] define target schemas before migrating code
 - [ ] decide the exact location of additional validation
-- [ ] review indexes for email, phone, name, and location
-- [ ] define migration and rollback strategy
-- [ ] cover geospatial queries with reliable tests
+- [x] review indexes for email, phone, name, and location
+- [x] define migration and rollback strategy
+- [x] cover geospatial queries with reliable tests
+- [x] formalize data testing boundaries (no external HTTP dependency)
 
 ## Validation
 
-- [ ] schemas and models are documented
-- [ ] indexes are declared and verified
-- [ ] the migration plan is tested in an isolated environment
+- [x] schemas and models are documented
+- [x] indexes are declared and verified
+- [x] the migration plan is tested in an isolated environment
 
 ## Related documents
 
 - `../implementation/data-upgrade.md`
 - `../adr/0004-mongoose-8-and-validation.md`
+- `../adr/0005-data-testing-strategy.md`
