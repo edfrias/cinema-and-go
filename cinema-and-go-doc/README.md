@@ -6,6 +6,8 @@
 
 ```Cinema And Go``` is a platform where you can geolocate yourself and see which are the closest cinemas to you and which sessions you are able to reach and enjoy.
 
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/edfrias/cinema-and-go)
+
 ## Description
 
 Users can:
@@ -15,9 +17,6 @@ Users can:
 - View all the movies and their sessions
 - Pick a session that they are going to be able to reach
 - See the quickest route to reach the cinema
-
-
-[Follow this link to see the Trello for the project](https://trello.com/b/CFbg97oq/cinema-and-go)
 
 ## Mock ups
 ---
